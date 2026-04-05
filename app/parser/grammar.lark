@@ -2,18 +2,18 @@
 
 command: buy | sell | cancel | status | help
 
-buy: "BUY" quantity contract price?
-sell: "SELL" quantity contract price?
-cancel: "CANCEL" order_id
-status: "STATUS" order_id?
-help: "HELP"
+buy: /BUY/i quantity contract price?
+sell: /SELL/i quantity contract price?
+cancel: /CANCEL/i order_id
+status: /STATUS/i order_id?
+help: /HELP/i
 
 quantity: NUMBER
 contract: CONTRACT
-price: "AT"i NUMBER
-order_id: /\w+/
+price: /AT/i NUMBER
+order_id: /[\w-]+/
 
-CONTRACT: /[A-Z]{1,5}/
+CONTRACT: /[a-zA-Z]{1,5}/i
 NUMBER: /\d+(\.\d+)?/
 
 %import common.WS

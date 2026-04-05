@@ -24,7 +24,7 @@ class CommandRequest(BaseModel):
 class ParsedCommand(BaseModel):
     """Parsed trading command structure."""
     action: str = Field(..., description="BUY, SELL, CANCEL, etc.")
-    contract: str = Field(..., description="Contract symbol (ES, NQ, etc.)")
+    contract: Optional[str] = Field(None, description="Contract symbol (ES, NQ, etc.)")
     quantity: Optional[int] = Field(None, ge=0, description="Order quantity")
     price: Optional[float] = Field(None, gt=0, description="Order price (limit orders)")
     order_id: Optional[str] = Field(None, description="For CANCEL operations")
