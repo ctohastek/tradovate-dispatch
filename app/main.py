@@ -1,5 +1,5 @@
 from fastapi import FastAPI
-from app.routes import health_router
+from app.routes import health_router, execute_router
 
 app = FastAPI(
     title="Tradovate Dispatch",
@@ -8,3 +8,4 @@ app = FastAPI(
 )
 
 app.include_router(health_router)
+app.include_router(execute_router)
