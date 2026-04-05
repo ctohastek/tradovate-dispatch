@@ -1,0 +1,21 @@
+# dispatcher.example.yaml
+# Agent configuration file
+# Copy to agents.yaml and configure your agents
+
+agents:
+  agent-1:
+    name: "Primary Trading Agent"
+    api_key: "agent-1-api-key-here"
+    rate_limit_override: 30
+    enabled: true
+
+  agent-2:
+    name: "Secondary Trading Agent"
+    api_key: "agent-2-api-key-here"
+    enabled: true
+
+  test-agent:
+    name: "Test/Demo Agent"
+    api_key: "test-api-key"
+    rate_limit_override: 10
+    enabled: true
