@@ -1,0 +1,103 @@
+<h2>Request/Response Flow</h2>
+<p class="subtitle">How a command travels through the dispatcher</p>
+
+<div class="mockup">
+  <div class="mockup-header">Agent sends: POST /execute</div>
+  <div class="mockup-body" style="background: #f5f5f5; padding: 20px; font-family: monospace; border-radius: 4px;">
+    curl -X POST http://localhost:8000/execute \<br/>
+    &nbsp;&nbsp;-H "Authorization: Bearer AGENT_API_KEY" \<br/>
+    &nbsp;&nbsp;-d 'BUY 2 ES LIMIT 6425.50 SET STOP 6400.00 SET TAKE PROFIT 6500.00'
+  </div>
+</div>
+
+<div style="text-align: center; margin: 20px 0; color: #666;">↓</div>
+
+<div class="mockup">
+  <div class="mockup-header">Step 1: Authenticate</div>
+  <div class="mockup-body">
+    <p><strong>✓ API Key valid?</strong> Look up agent in DB</p>
+    <p><strong>✓ Agent exists?</strong> Retrieve: target_url, rate_limit, Tradovate creds</p>
+    <p><strong>✗ If invalid:</strong> Return 401 + log</p>
+  </div>
+</div>
+
+<div style="text-align: center; margin: 20px 0; color: #666;">↓</div>
+
+<div class="mockup">
+  <div class="mockup-header">Step 2: Parse Command</div>
+  <div class="mockup-body">
+    <p><strong>Grammar check:</strong> BUY 2 ES LIMIT 6425.50 ...</p>
+    <p><strong>Semantic validation:</strong> qty in [1-999]? prices in XXXX.XX format?</p>
+    <p><strong>Output:</strong></p>
+    <pre style="background: #eee; padding: 10px; border-radius: 3px;">
+{
+  "command_type": "BUY",
+  "quantity": 2,
+  "contract": "ES",
+  "limit_price": 6425.50,
+  "stop_loss": 6400.00,
+  "take_profit": 6500.00
+}</pre>
+    <p><strong>✗ If parse fails:</strong> Return 400 + clear error message</p>
+  </div>
+</div>
+
+<div style="text-align: center; margin: 20px 0; color: #666;">↓</div>
+
+<div class="mockup">
+  <div class="mockup-header">Step 3: Check Rate Limit</div>
+  <div class="mockup-body">
+    <p><strong>Count requests:</strong> agent's requests in last 60 seconds</p>
+    <p><strong>Check against limit:</strong> rate_limit_per_minute</p>
+    <p><strong>✓ Within limit?</strong> Proceed to Step 4</p>
+    <p><strong>✗ Rate limited?</strong> Return 429 "WAITING" + send alert email to admin</p>
+  </div>
+</div>
+
+<div style="text-align: center; margin: 20px 0; color: #666;">↓</div>
+
+<div class="mockup">
+  <div class="mockup-header">Step 4: Tradovate Auth (if needed)</div>
+  <div class="mockup-body">
+    <p><strong>Check cached token:</strong> Is token valid and &lt; 75 min old?</p>
+    <p><strong>✓ Yes:</strong> Use cached token</p>
+    <p><strong>✗ No:</strong> Call /auth/accessTokenRequest with agent's Tradovate creds</p>
+    <p><strong>Store token:</strong> Cache it for next request</p>
+  </div>
+</div>
+
+<div style="text-align: center; margin: 20px 0; color: #666;">↓</div>
+
+<div class="mockup">
+  <div class="mockup-header">Step 5: Call Tradovate API</div>
+  <div class="mockup-body">
+    <p><strong>Construct request:</strong> Map parsed command → Tradovate order format</p>
+    <p><strong>Send to:</strong> agent's target_url (locked, cannot change)</p>
+    <p><strong>Example:</strong> POST /order/placeorder</p>
+    <p><code style="background: #eee; padding: 2px 6px;">{"orderType": "LMT", "quantity": 2, "price": 6425.50, ...}</code></p>
+  </div>
+</div>
+
+<div style="text-align: center; margin: 20px 0; color: #666;">↓</div>
+
+<div class="mockup">
+  <div class="mockup-header">Step 6: Process Response</div>
+  <div class="mockup-body">
+    <p><strong>✓ Success (200):</strong> Extract orderId, log to audit_logs, return JSON to agent</p>
+    <p><strong>✗ Failure (4xx/5xx):</strong> Log error details, send alert email to admin, return error to agent</p>
+  </div>
+</div>
+
+<div style="text-align: center; margin: 20px 0; color: #666;">↓</div>
+
+<div class="mockup">
+  <div class="mockup-header">Agent receives response</div>
+  <div class="mockup-body" style="background: #f5f5f5; padding: 20px; font-family: monospace; border-radius: 4px;">
+    {<br/>
+    &nbsp;&nbsp;"success": true,<br/>
+    &nbsp;&nbsp;"orderId": "12345",<br/>
+    &nbsp;&nbsp;"message": "Order placed: 2 ES @ LIMIT 6425.50",<br/>
+    &nbsp;&nbsp;"tradovateResponse": {...}<br/>
+    }
+  </div>
+</div>

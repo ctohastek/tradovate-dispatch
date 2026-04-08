@@ -1,0 +1,20 @@
+?start: command
+
+command: buy | sell | cancel | status | help
+
+buy: /BUY/i quantity contract price?
+sell: /SELL/i quantity contract price?
+cancel: /CANCEL/i order_id
+status: /STATUS/i order_id?
+help: /HELP/i
+
+quantity: NUMBER
+contract: CONTRACT
+price: /AT/i NUMBER
+order_id: /[\w-]+/
+
+CONTRACT: /[a-zA-Z]{1,5}/i
+NUMBER: /\d+(\.\d+)?/
+
+%import common.WS
+%ignore WS
