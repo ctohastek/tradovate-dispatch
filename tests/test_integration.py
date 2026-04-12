@@ -16,19 +16,20 @@ def client():
 @pytest.fixture(autouse=True)
 def setup_env():
     """Setup environment for tests."""
-    os.environ["TRADOVATE_API_URL"] = "https://api.test.com"
+    os.environ["TRADOVATE_LIVE_URL"] = "https://live.test.com"
+    os.environ["TRADOVATE_DEMO_URL"] = "https://demo.test.com"
     os.environ["TRADOVATE_API_KEY"] = "test-key"
     os.environ["DISPATCHER_API_KEY"] = "dispatcher-test-key"
     os.environ["DATABASE_URL"] = ":memory:"
     yield
     # Cleanup
-    for key in ["TRADOVATE_API_URL", "TRADOVATE_API_KEY", "DISPATCHER_API_KEY", "DATABASE_URL"]:
+    for key in ["TRADOVATE_LIVE_URL", "TRADOVATE_DEMO_URL", "TRADOVATE_API_KEY", "DISPATCHER_API_KEY", "DATABASE_URL"]:
         os.environ.pop(key, None)
 
 
 def test_full_buy_flow(client):
     """Test complete BUY order flow from request to execution."""
-    async def mock_get_deps():
+    async def mock_get_deps(agent_id=None):
         mock_parser = MagicMock()
         mock_parsed_cmd = MagicMock()
         mock_parsed_cmd.action = "BUY"
@@ -95,7 +96,7 @@ def test_full_buy_flow(client):
 
 def test_full_sell_with_price_flow(client):
     """Test SELL order with limit price."""
-    async def mock_get_deps():
+    async def mock_get_deps(agent_id=None):
         mock_parser = MagicMock()
         mock_parsed_cmd = MagicMock()
         mock_parsed_cmd.action = "SELL"
@@ -162,7 +163,7 @@ def test_full_sell_with_price_flow(client):
 
 def test_invalid_command_flow(client):
     """Test handling of invalid command."""
-    async def mock_get_deps():
+    async def mock_get_deps(agent_id=None):
         mock_parser = MagicMock()
         mock_parser.parse.side_effect = ValueError("Invalid command syntax")
 
@@ -203,7 +204,7 @@ def test_invalid_command_flow(client):
 
 def test_rate_limit_flow(client):
     """Test rate limiting across multiple requests."""
-    async def mock_get_deps_rate_limited():
+    async def mock_get_deps_rate_limited(agent_id=None):
         mock_rate_limiter = AsyncMock()
         mock_rate_limiter.is_allowed = AsyncMock(return_value=False)
 
@@ -239,7 +240,7 @@ def test_rate_limit_flow(client):
 
 def test_auth_required(client):
     """Test that authentication is required."""
-    async def mock_get_deps():
+    async def mock_get_deps(agent_id=None):
         return {
             'db': MagicMock(),
             'parser': MagicMock(),
@@ -288,7 +289,7 @@ def test_health_endpoint(client):
 
 def test_invalid_contract_validation(client):
     """Test validation of invalid contract."""
-    async def mock_get_deps():
+    async def mock_get_deps(agent_id=None):
         mock_parser = MagicMock()
         mock_parsed_cmd = MagicMock()
         mock_parser.parse.return_value = mock_parsed_cmd
@@ -337,7 +338,7 @@ def test_invalid_contract_validation(client):
 
 def test_missing_quantity_validation(client):
     """Test validation when quantity is missing."""
-    async def mock_get_deps():
+    async def mock_get_deps(agent_id=None):
         mock_parser = MagicMock()
         mock_parsed_cmd = MagicMock()
         mock_parser.parse.return_value = mock_parsed_cmd
@@ -386,7 +387,7 @@ def test_missing_quantity_validation(client):
 
 def test_cancel_order_flow(client):
     """Test CANCEL order flow."""
-    async def mock_get_deps():
+    async def mock_get_deps(agent_id=None):
         mock_parser = MagicMock()
         mock_parsed_cmd = MagicMock()
         mock_parsed_cmd.action = "CANCEL"
@@ -448,7 +449,7 @@ def test_cancel_order_flow(client):
 
 def test_tradovate_api_error_flow(client):
     """Test handling of Tradovate API errors."""
-    async def mock_get_deps():
+    async def mock_get_deps(agent_id=None):
         mock_parser = MagicMock()
         mock_parsed_cmd = MagicMock()
         mock_parsed_cmd.action = "BUY"
@@ -502,7 +503,7 @@ def test_tradovate_api_error_flow(client):
 
 def test_audit_logging_on_success(client):
     """Test that successful execution logs to audit."""
-    async def mock_get_deps():
+    async def mock_get_deps(agent_id=None):
         mock_parser = MagicMock()
         mock_parsed_cmd = MagicMock()
         mock_parsed_cmd.action = "BUY"
@@ -566,7 +567,7 @@ def test_multiple_orders_sequence(client):
     """Test executing multiple orders in sequence."""
     order_count = 0
 
-    async def mock_get_deps():
+    async def mock_get_deps(agent_id=None):
         nonlocal order_count
         order_count += 1
 
@@ -639,7 +640,7 @@ def test_multiple_orders_sequence(client):
 
 def test_validation_error_logging(client):
     """Test that validation errors are properly logged."""
-    async def mock_get_deps():
+    async def mock_get_deps(agent_id=None):
         mock_parser = MagicMock()
         mock_parsed_cmd = MagicMock()
         mock_parser.parse.return_value = mock_parsed_cmd
@@ -686,7 +687,7 @@ def test_validation_error_logging(client):
 
 def test_response_contains_required_fields(client):
     """Test that successful response contains all required fields."""
-    async def mock_get_deps():
+    async def mock_get_deps(agent_id=None):
         mock_parser = MagicMock()
         mock_parsed_cmd = MagicMock()
         mock_parsed_cmd.action = "BUY"

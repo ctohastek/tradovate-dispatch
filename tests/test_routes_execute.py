@@ -6,7 +6,7 @@ from unittest.mock import patch, AsyncMock, MagicMock
 def test_execute_missing_auth():
     """Test that request without auth header returns 401."""
 
-    async def mock_get_deps():
+    async def mock_get_deps(agent_id=None):
         return {
             'db': MagicMock(),
             'parser': MagicMock(),
@@ -39,7 +39,7 @@ def test_execute_missing_auth():
 def test_execute_invalid_auth():
     """Test that request with invalid auth header returns 401."""
 
-    async def mock_get_deps():
+    async def mock_get_deps(agent_id=None):
         return {
             'db': MagicMock(),
             'parser': MagicMock(),
@@ -72,7 +72,7 @@ def test_execute_invalid_auth():
 def test_execute_missing_fields():
     """Test that missing required fields returns validation error."""
 
-    async def mock_get_deps():
+    async def mock_get_deps(agent_id=None):
         return {
             'db': MagicMock(),
             'parser': MagicMock(),
@@ -104,7 +104,7 @@ def test_execute_missing_fields():
 def test_execute_rate_limited():
     """Test rate limiting enforcement."""
 
-    async def mock_get_deps():
+    async def mock_get_deps(agent_id=None):
         mock_rate_limiter = AsyncMock()
         mock_rate_limiter.is_allowed = AsyncMock(return_value=False)
 
@@ -143,7 +143,7 @@ def test_execute_rate_limited():
 def test_execute_parser_error():
     """Test handling of parser errors."""
 
-    async def mock_get_deps():
+    async def mock_get_deps(agent_id=None):
         mock_parser = MagicMock()
         mock_parser.parse.side_effect = ValueError("Invalid command syntax")
 
@@ -184,7 +184,7 @@ def test_execute_parser_error():
 def test_execute_validation_error():
     """Test handling of validation errors."""
 
-    async def mock_get_deps():
+    async def mock_get_deps(agent_id=None):
         mock_parser = MagicMock()
         mock_parsed_cmd = MagicMock()
         mock_parser.parse.return_value = mock_parsed_cmd
@@ -233,7 +233,7 @@ def test_execute_validation_error():
 def test_execute_tradovate_error():
     """Test handling of Tradovate API errors."""
 
-    async def mock_get_deps():
+    async def mock_get_deps(agent_id=None):
         mock_parser = MagicMock()
         mock_parsed_cmd = MagicMock()
         mock_parser.parse.return_value = mock_parsed_cmd
@@ -292,7 +292,7 @@ def test_execute_tradovate_error():
 def test_execute_success():
     """Test successful command execution."""
 
-    async def mock_get_deps():
+    async def mock_get_deps(agent_id=None):
         mock_parser = MagicMock()
         mock_parsed_cmd = MagicMock()
         mock_parsed_cmd.action = "BUY"

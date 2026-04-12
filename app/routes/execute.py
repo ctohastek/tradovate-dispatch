@@ -1,5 +1,7 @@
 from fastapi import APIRouter, HTTPException, Header
-from typing import Optional
+from typing import Optional, Dict, Any
+import yaml
+import os
 from app.models import CommandRequest, CommandResponse, CommandStatus
 from app.auth.api_key import validate_api_key, get_api_key_from_header
 from app.parser import CommandParser, CommandValidator
@@ -17,16 +19,37 @@ router = APIRouter(tags=["execute"])
 _db = None
 _parser = None
 _validator = None
-_client = None
 _rate_limiter = None
 _audit_logger = None
 _mailer = None
 _settings = None
+_agents_config = None
 
 
-async def get_dependencies():
+def _load_agents_config() -> Dict[str, Any]:
+    """Load agents configuration from agents.yaml or agents.yaml.example."""
+    global _agents_config
+
+    if _agents_config is not None:
+        return _agents_config
+
+    config_path = "agents.yaml"
+    if not os.path.exists(config_path):
+        config_path = "agents.yaml.example"
+
+    if not os.path.exists(config_path):
+        _agents_config = {"agents": {}}
+        return _agents_config
+
+    with open(config_path, "r") as f:
+        _agents_config = yaml.safe_load(f) or {"agents": {}}
+
+    return _agents_config
+
+
+async def get_dependencies(agent_id: Optional[str] = None):
     """Initialize and return all dependencies."""
-    global _db, _parser, _validator, _client, _rate_limiter, _audit_logger, _mailer, _settings
+    global _db, _parser, _validator, _rate_limiter, _audit_logger, _mailer, _settings
 
     if _settings is None:
         _settings = get_settings()
@@ -41,9 +64,6 @@ async def get_dependencies():
     if _validator is None:
         _validator = CommandValidator()
 
-    if _client is None:
-        _client = TradovateClient(_settings)
-
     if _rate_limiter is None:
         _rate_limiter = RateLimiter(_db, _settings.rate_limit_requests_per_minute)
 
@@ -53,11 +73,19 @@ async def get_dependencies():
     if _mailer is None:
         _mailer = AlertMailer(_settings)
 
+    # Load agent config and create client with agent's environment
+    agents_config = _load_agents_config()
+    agent_env = "DEMO"  # default
+    if agent_id and agent_id in agents_config.get("agents", {}):
+        agent_env = agents_config["agents"][agent_id].get("environment", "DEMO")
+
+    client = TradovateClient(_settings, environment=agent_env)
+
     return {
         'db': _db,
         'parser': _parser,
         'validator': _validator,
-        'client': _client,
+        'client': client,
         'rate_limiter': _rate_limiter,
         'audit_logger': _audit_logger,
         'mailer': _mailer,
@@ -86,11 +114,12 @@ async def execute_command(
     Raises:
         HTTPException: For authentication, validation, rate limit, or execution errors
     """
-    deps = await get_dependencies()
-    settings = deps['settings']
-
     agent_id = request.agent_id
     command = request.command
+
+    # Get dependencies with agent-specific configuration
+    deps = await get_dependencies(agent_id=agent_id)
+    settings = deps['settings']
 
     # Step 1: Authenticate
     api_key = get_api_key_from_header(authorization)

@@ -6,7 +6,8 @@ from app.config import Settings
 
 def test_settings_from_env():
     """Config should load from environment variables."""
-    os.environ["TRADOVATE_API_URL"] = "https://api.tradovate.com"
+    os.environ["TRADOVATE_LIVE_URL"] = "https://live.tradovateapi.com/"
+    os.environ["TRADOVATE_DEMO_URL"] = "https://demo.tradovateapi.com/"
     os.environ["TRADOVATE_API_KEY"] = "test-key-123"
     os.environ["DATABASE_URL"] = "sqlite:///test.db"
     os.environ["DISPATCHER_API_KEY"] = "dispatcher-key-456"
@@ -15,7 +16,8 @@ def test_settings_from_env():
     os.environ["ALERT_EMAIL_TO"] = "alerts@example.com"
 
     settings = Settings()
-    assert settings.tradovate_api_url == "https://api.tradovate.com"
+    assert settings.tradovate_live_url == "https://live.tradovateapi.com/"
+    assert settings.tradovate_demo_url == "https://demo.tradovateapi.com/"
     assert settings.tradovate_api_key == "test-key-123"
     assert settings.database_url == "sqlite:///test.db"
     assert settings.dispatcher_api_key == "dispatcher-key-456"
@@ -27,7 +29,7 @@ def test_settings_from_env():
 def test_settings_defaults():
     """Config should have sensible defaults."""
     # Clear env vars to test defaults
-    for key in ["TRADOVATE_API_URL", "TRADOVATE_API_KEY", "DATABASE_URL",
+    for key in ["TRADOVATE_LIVE_URL", "TRADOVATE_DEMO_URL", "TRADOVATE_API_KEY", "DATABASE_URL",
                 "DISPATCHER_API_KEY", "RATE_LIMIT_REQUESTS_PER_MINUTE",
                 "ALERT_EMAIL_ENABLED", "ALERT_EMAIL_TO"]:
         os.environ.pop(key, None)

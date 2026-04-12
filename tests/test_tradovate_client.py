@@ -6,14 +6,26 @@ from app.config import Settings
 
 
 @pytest.mark.asyncio
-async def test_tradovate_client_init():
-    """Should initialize Tradovate client with config."""
+async def test_tradovate_client_init_demo():
+    """Should initialize Tradovate client with DEMO environment."""
     settings = Settings()
-    settings.tradovate_api_url = "https://api.tradovate.com"
+    settings.tradovate_demo_url = "https://demo.tradovateapi.com/"
     settings.tradovate_api_key = "test-key"
 
-    client = TradovateClient(settings)
-    assert client.api_url == "https://api.tradovate.com"
+    client = TradovateClient(settings, environment="DEMO")
+    assert client.api_url == "https://demo.tradovateapi.com/"
+    assert client.api_key == "test-key"
+
+
+@pytest.mark.asyncio
+async def test_tradovate_client_init_live():
+    """Should initialize Tradovate client with LIVE environment."""
+    settings = Settings()
+    settings.tradovate_live_url = "https://live.tradovateapi.com/"
+    settings.tradovate_api_key = "test-key"
+
+    client = TradovateClient(settings, environment="LIVE")
+    assert client.api_url == "https://live.tradovateapi.com/"
     assert client.api_key == "test-key"
 
 
@@ -21,10 +33,10 @@ async def test_tradovate_client_init():
 async def test_tradovate_client_buy_order():
     """Should execute BUY order via API."""
     settings = Settings()
-    settings.tradovate_api_url = "https://api.tradovate.com"
+    settings.tradovate_demo_url = "https://demo.tradovateapi.com/"
     settings.tradovate_api_key = "test-key"
 
-    client = TradovateClient(settings)
+    client = TradovateClient(settings, environment="DEMO")
 
     # Mock the HTTP request
     with patch.object(client.http_client, 'request', new_callable=AsyncMock) as mock_request:
@@ -46,10 +58,10 @@ async def test_tradovate_client_buy_order():
 async def test_tradovate_client_close():
     """Should close HTTP client on shutdown."""
     settings = Settings()
-    settings.tradovate_api_url = "https://api.tradovate.com"
+    settings.tradovate_demo_url = "https://demo.tradovateapi.com/"
     settings.tradovate_api_key = "test-key"
 
-    client = TradovateClient(settings)
+    client = TradovateClient(settings, environment="DEMO")
 
     with patch.object(client.http_client, 'aclose', new_callable=AsyncMock) as mock_close:
         await client.close()

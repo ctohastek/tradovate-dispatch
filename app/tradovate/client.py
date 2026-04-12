@@ -7,8 +7,19 @@ from app.config import Settings
 class TradovateClient:
     """Async HTTP client for Tradovate API."""
 
-    def __init__(self, settings: Settings):
-        self.api_url = settings.tradovate_api_url
+    def __init__(self, settings: Settings, environment: str = "DEMO"):
+        """
+        Initialize Tradovate client.
+
+        Args:
+            settings: Application settings with API URLs
+            environment: "LIVE" or "DEMO" to select endpoint
+        """
+        if environment.upper() == "LIVE":
+            self.api_url = settings.tradovate_live_url
+        else:
+            self.api_url = settings.tradovate_demo_url
+
         self.api_key = settings.tradovate_api_key
         self.http_client = httpx.AsyncClient()
         self._headers = {

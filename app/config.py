@@ -10,7 +10,8 @@ class Settings(BaseSettings):
     model_config = ConfigDict(env_file=".env", case_sensitive=False)
 
     # Tradovate API
-    tradovate_api_url: Optional[str] = None
+    tradovate_live_url: Optional[str] = None
+    tradovate_demo_url: Optional[str] = None
     tradovate_api_key: Optional[str] = None
 
     # Database
