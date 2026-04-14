@@ -25,3 +25,4 @@ plans
 CLAUDE.md
 agents.yaml
 venv
+dispatcher.db-*
