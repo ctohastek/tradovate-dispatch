@@ -21,12 +21,34 @@ FastAPI-based command dispatcher for Tradovate trading API. Parses natural langu
 - `app/routes/health.py` - GET /health endpoint
 - `app/routes/execute.py` - POST /execute endpoint (core API)
 
+## Memory & Session Persistence
+
+**Memory location:** `~/.claude/projects/-data1-claude-projects-tradovate-dispatch/memory/`
+
+**MEMORY.md index** is auto-loaded every session. Memory persists across sessions.
+
+**At session end, always:**
+- Update memory files with completed work, blockers, design decisions
+- Keep entries concise and current; remove stale items
+- Use revise-claude-md skill to update CLAUDE.md with learnings
+
+**Memory file types:**
+- `MEMORY.md` — index of all memory files (auto-loaded, max 200 lines)
+- Individual `*.md` files — one per topic (user, feedback, project, reference)
+
 ## Development Workflow
 
 1. **Tests First** - TDD approach
 2. **Run Tests** - `pytest tests/ -v`
-3. **Commit Frequently** - Small, focused commits
-4. **Update Docs** - Keep documentation current
+3. **Do NOT commit** - User reviews work after tests pass and commits manually
+4. **Update Memory** - Save blockers, decisions, progress at session end
+5. **Console Output** - Be terse; put summaries in memory files, not terminal
+
+## Git Operations
+
+**Prohibited:** No `git` commands, `gh` CLI, or GitHub MCP operations.
+- User will add/commit/push after reviewing passing tests.
+- See memory: [Git Workflow](../../../.claude/projects/-data1-claude-projects-tradovate-dispatch/memory/git-workflow.md)
 
 ## Running Tests
 
