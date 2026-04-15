@@ -1,0 +1,25 @@
+
+# Sample call to tradovate requesting auth/accesstokenrequest (not a trading command for orders)
+
+Note:
+ - my useraccount name is needed (in .env)
+ - my usercredentials are needed (in .env)
+ - (The 2 preceding should NOT be needed for trading calls)
+ - appID == our agent IDs each appID (or agent name) has its own API key
+ - sec == is the API key (secret) belonging to the agent (and app)
+ - cid == Client ID <--- issued uniquely with each API key and has to be presented with key
+ - deviceId == global deviceID - value there is the same for all agents
+
+curl -X POST "https://demo.tradovateapi.com/v1/auth/accesstokenrequest" \
+ -H "accept: application/json" \
+ -H "Content-Type: application/json" \
+ -d "{ \
+   \"name\": \"AccountName\", \
+   \"password\": \"YourPassword\", \
+   \"appId\": \"mini01\", \
+   \"appVersion\": \"0.0.1\", \
+   \"deviceId\": \"   ..123..  \", \
+   \"cid\": \"12026\", \
+   \"sec\": \"YourSecret\" \
+ }"
+

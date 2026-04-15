@@ -6,23 +6,23 @@ agents:
   mini01:
     name: "mini01"
     api_key: "mini01-api-key-here"
-    environment: "DEMO"  # DEMO or LIVE
-    rate_limit_override: 30
+    environment: "demo"  # demo or live
+    rate_limit_override: 20
     max_contracts_allowed: 6
     enabled: true
 
   mini02:
     name: "mini02"
     api_key: "mini02-api-key-here"
-    environment: "DEMO"  # DEMO or LIVE
-    rate_limit_override: 30
+    environment: "demo"  # demo or live
+    rate_limit_override: 20
     max_contracts_allowed: 6
-    enabled: true
+    enabled: false
 
   mini03:
     name: "mini03"
     api_key: "mini03-api-key-here"
-    environment: "DEMO"  # DEMO or LIVE
-    rate_limit_override: 30
+    environment: "demo"  # demo or live
+    rate_limit_override: 20
     max_contracts_allowed: 6
-    enabled: true
+    enabled: false
