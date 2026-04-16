@@ -1,0 +1,15 @@
+[Unit]
+Description=Tradovate Dispatch API
+After=network.target
+
+[Service]
+Type=notify
+User=hsinclai
+WorkingDirectory=/data1/docroot/tradovate-dispatch
+EnvironmentFile=/data1/docroot/tradovate-dispatch/.env
+ExecStart=/usr/local/bin/gunicorn -c gunicorn.conf.py app.main:app
+Restart=on-failure
+RestartSec=30s
+
+[Install]
+WantedBy=multi-user.target
