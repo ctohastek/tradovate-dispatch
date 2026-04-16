@@ -17,7 +17,7 @@ async def test_execute_buy_command():
     result = await executor.execute(cmd)
 
     assert result["orderId"] == "ORD-1"
-    mock_client.buy.assert_called_once_with(contract="ES", quantity=10, price=None)
+    mock_client.buy.assert_called_once_with(symbol="ES", orderQty=10, price=None)
 
 
 @pytest.mark.asyncio
@@ -32,7 +32,7 @@ async def test_execute_sell_with_price():
     result = await executor.execute(cmd)
 
     mock_client.sell.assert_called_once_with(
-        contract="NQ", quantity=5, price=16000.5
+        symbol="NQ", orderQty=5, price=16000.5
     )
 
 
@@ -43,11 +43,11 @@ async def test_execute_cancel_command():
     mock_client.cancel = AsyncMock(return_value={"status": "CANCELLED"})
 
     executor = CommandExecutor(mock_client)
-    cmd = ParsedCommand(action="CANCEL", contract="ES", order_id="ORD-123")
+    cmd = ParsedCommand(action="CANCEL", contract="ES", order_id="123")
 
     result = await executor.execute(cmd)
 
-    mock_client.cancel.assert_called_once_with("ORD-123")
+    mock_client.cancel.assert_called_once_with(orderId=123)
 
 
 @pytest.mark.asyncio
@@ -55,15 +55,15 @@ async def test_execute_status_command():
     """Should map STATUS command."""
     mock_client = AsyncMock()
     mock_client.get_order_status = AsyncMock(
-        return_value={"orderId": "ORD-123", "status": "FILLED"}
+        return_value={"orderId": "123", "status": "FILLED"}
     )
 
     executor = CommandExecutor(mock_client)
-    cmd = ParsedCommand(action="STATUS", contract="ES", order_id="ORD-123")
+    cmd = ParsedCommand(action="STATUS", contract="ES", order_id="123")
 
     result = await executor.execute(cmd)
 
-    mock_client.get_order_status.assert_called_once_with("ORD-123")
+    mock_client.get_order_status.assert_called_once_with(orderId=123)
 
 
 @pytest.mark.asyncio

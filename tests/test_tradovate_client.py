@@ -48,7 +48,7 @@ async def test_tradovate_client_buy_order():
         mock_response.raise_for_status = lambda: None
         mock_request.return_value = mock_response
 
-        result = await client.buy(contract="ES", quantity=10, price=None)
+        result = await client.buy(symbol="ES", orderQty=10, price=None)
 
         assert result["orderId"] == "ORD-123"
         assert result["status"] == "PENDING"

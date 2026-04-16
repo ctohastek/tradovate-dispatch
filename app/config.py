@@ -8,9 +8,10 @@ import os
 class Settings(BaseSettings):
     """Application configuration from environment variables."""
 
-    model_config = ConfigDict(env_file=".env", case_sensitive=False)
+    model_config = ConfigDict(env_file=".env", case_sensitive=False, extra='ignore')
 
     # Tradovate API
+    tradovate_api_key: Optional[str] = None
     tradovate_live_url: Optional[str] = None
     tradovate_demo_url: Optional[str] = None
     tradovate_device_id: Optional[str] = None
