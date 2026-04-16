@@ -53,24 +53,24 @@ class CommandExecutor:
 
         if action == "BUY":
             return await self.client.buy(
-                contract=command.contract,
-                quantity=command.quantity,
+                symbol=command.contract,
+                orderQty=command.quantity,
                 price=command.price
             )
 
         elif action == "SELL":
             return await self.client.sell(
-                contract=command.contract,
-                quantity=command.quantity,
+                symbol=command.contract,
+                orderQty=command.quantity,
                 price=command.price
             )
 
         elif action == "CANCEL":
-            return await self.client.cancel(command.order_id)
+            return await self.client.cancel(orderId=int(command.order_id))
 
         elif action == "STATUS":
             if command.order_id:
-                return await self.client.get_order_status(command.order_id)
+                return await self.client.get_order_status(orderId=int(command.order_id))
             else:
                 return {"error": "Order ID required for STATUS"}
 

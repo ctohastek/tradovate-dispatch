@@ -5,22 +5,41 @@ from app.config import Settings
 
 
 class TradovateClient:
-    """Async HTTP client for Tradovate API."""
+    """Async HTTP client for Tradovate API per Tradovate REST API spec."""
 
-    def __init__(self, settings: Settings, environment: str = "DEMO"):
+    # Valid orderType values per Tradovate spec
+    VALID_ORDER_TYPES = {
+        "Limit", "MIT", "Market", "QTS", "Stop",
+        "StopLimit", "TrailingStop", "TrailingStopLimit"
+    }
+
+    def __init__(self, settings: Settings, environment: str = "DEMO", agent_name: Optional[str] = None):
         """
         Initialize Tradovate client.
 
         Args:
-            settings: Application settings with API URLs
+            settings: Application settings with API URLs and credentials
             environment: "LIVE" or "DEMO" to select endpoint
+            agent_name: Agent name to get per-agent credentials (e.g., 'mini01')
         """
-        if environment.upper() == "LIVE":
+        self.settings = settings
+        self.agent_name = agent_name
+        self.environment = environment.upper()
+
+        if self.environment == "LIVE":
             self.api_url = settings.tradovate_live_url
         else:
             self.api_url = settings.tradovate_demo_url
 
-        self.api_key = settings.tradovate_api_key
+        # Get agent-specific Tradovate credentials
+        if agent_name:
+            agent_config = settings.get_agent_tradovate_config(agent_name)
+            self.api_key = agent_config.get("api_key")
+            self.client_id = agent_config.get("client_id")
+        else:
+            self.api_key = settings.tradovate_api_key
+            self.client_id = None
+
         self.http_client = httpx.AsyncClient()
         self._headers = {
             "Authorization": f"Bearer {self.api_key}",
@@ -38,7 +57,7 @@ class TradovateClient:
 
         Args:
             method: HTTP method (GET, POST, etc.)
-            endpoint: API endpoint path (e.g., "/orders/place")
+            endpoint: API endpoint path (e.g., "/order/placeorder")
             json: Request body as dict
 
         Returns:
@@ -62,92 +81,228 @@ class TradovateClient:
         except httpx.HTTPError as e:
             raise Exception(f"Tradovate API error: {str(e)}")
 
+    def _validate_order_type(self, order_type: str) -> None:
+        """Validate orderType against Tradovate spec."""
+        if order_type not in self.VALID_ORDER_TYPES:
+            raise ValueError(
+                f"Invalid orderType '{order_type}'. Must be one of: {', '.join(sorted(self.VALID_ORDER_TYPES))}"
+            )
+
     async def buy(
         self,
-        contract: str,
-        quantity: int,
+        symbol: str,
+        orderQty: int,
         price: Optional[float] = None
     ) -> Dict[str, Any]:
         """
-        Place BUY order.
+        Place BUY order per Tradovate PlaceOrder spec.
 
         Args:
-            contract: Contract symbol (ES, NQ, etc.)
-            quantity: Number of contracts
+            symbol: Contract symbol (ES, NQ, etc.)
+            orderQty: Number of contracts
             price: Limit price (optional, None = market order)
 
         Returns:
             Order response from Tradovate
         """
+        orderType = "Limit" if price is not None else "Market"
+        self._validate_order_type(orderType)
+
         payload = {
-            "contract": contract,
-            "quantity": quantity,
-            "side": "BUY"
+            "action": "Buy",
+            "symbol": symbol,
+            "orderQty": orderQty,
+            "orderType": orderType,
+            "isAutomated": True
         }
 
         if price is not None:
             payload["price"] = price
-            payload["orderType"] = "LIMIT"
-        else:
-            payload["orderType"] = "MARKET"
 
-        return await self._request("POST", "/orders/place", json=payload)
+        return await self._request("POST", "/order/placeorder", json=payload)
 
     async def sell(
         self,
-        contract: str,
-        quantity: int,
+        symbol: str,
+        orderQty: int,
         price: Optional[float] = None
     ) -> Dict[str, Any]:
         """
-        Place SELL order.
+        Place SELL order per Tradovate PlaceOrder spec.
 
         Args:
-            contract: Contract symbol
-            quantity: Number of contracts
-            price: Limit price (optional)
+            symbol: Contract symbol
+            orderQty: Number of contracts
+            price: Limit price (optional, None = market order)
 
         Returns:
             Order response from Tradovate
         """
+        orderType = "Limit" if price is not None else "Market"
+        self._validate_order_type(orderType)
+
         payload = {
-            "contract": contract,
-            "quantity": quantity,
-            "side": "SELL"
+            "action": "Sell",
+            "symbol": symbol,
+            "orderQty": orderQty,
+            "orderType": orderType,
+            "isAutomated": True
         }
 
         if price is not None:
             payload["price"] = price
-            payload["orderType"] = "LIMIT"
-        else:
-            payload["orderType"] = "MARKET"
 
-        return await self._request("POST", "/orders/place", json=payload)
+        return await self._request("POST", "/order/placeorder", json=payload)
 
-    async def cancel(self, order_id: str) -> Dict[str, Any]:
+    async def place_oco(
+        self,
+        symbol: str,
+        orderQty: int,
+        action: str,
+        orderType: str,
+        other: Dict[str, Any],
+        price: Optional[float] = None
+    ) -> Dict[str, Any]:
         """
-        Cancel existing order.
+        Place One-Cancels-Other (OCO) order per Tradovate PlaceOCO spec.
+
+        OCO orders link 2 orders together such that if one fills, the other is cancelled.
 
         Args:
-            order_id: Tradovate order ID
+            symbol: Contract symbol
+            orderQty: Quantity for primary order
+            action: "Buy" or "Sell"
+            orderType: Order type (Limit, Stop, etc.)
+            other: Secondary order specification dict
+            price: Price for primary order (if applicable)
+
+        Returns:
+            Order response with orderId and ocoId
+        """
+        self._validate_order_type(orderType)
+
+        payload = {
+            "action": action,
+            "symbol": symbol,
+            "orderQty": orderQty,
+            "orderType": orderType,
+            "other": other,
+            "isAutomated": True
+        }
+
+        if price is not None:
+            payload["price"] = price
+
+        return await self._request("POST", "/order/placeoco", json=payload)
+
+    async def place_oso(
+        self,
+        symbol: str,
+        orderQty: int,
+        action: str,
+        orderType: str,
+        bracket1: Dict[str, Any],
+        price: Optional[float] = None,
+        bracket2: Optional[Dict[str, Any]] = None
+    ) -> Dict[str, Any]:
+        """
+        Place One-Sends-Other (OSO) bracket order per Tradovate PlaceOSO spec.
+
+        OSO orders (bracket orders) link 3 orders: primary order with 2 bracket orders.
+
+        Args:
+            symbol: Contract symbol
+            orderQty: Quantity for primary order
+            action: "Buy" or "Sell"
+            orderType: Order type
+            bracket1: First bracket order (e.g., take profit)
+            price: Price for primary order (if applicable)
+            bracket2: Optional second bracket order (e.g., stop loss)
+
+        Returns:
+            Order response with orderId and osoId
+        """
+        self._validate_order_type(orderType)
+
+        payload = {
+            "action": action,
+            "symbol": symbol,
+            "orderQty": orderQty,
+            "orderType": orderType,
+            "bracket1": bracket1,
+            "isAutomated": True
+        }
+
+        if price is not None:
+            payload["price"] = price
+
+        if bracket2 is not None:
+            payload["bracket2"] = bracket2
+
+        return await self._request("POST", "/order/placeoso", json=payload)
+
+    async def modify_order(
+        self,
+        orderId: int,
+        orderQty: int,
+        orderType: str,
+        price: Optional[float] = None,
+        stopPrice: Optional[float] = None
+    ) -> Dict[str, Any]:
+        """
+        Modify existing order per Tradovate ModifyOrder spec.
+
+        Args:
+            orderId: Tradovate order ID
+            orderQty: New order quantity
+            orderType: New order type
+            price: New limit price (if applicable)
+            stopPrice: New stop price (if applicable)
+
+        Returns:
+            Modified order response
+        """
+        self._validate_order_type(orderType)
+
+        payload = {
+            "orderId": orderId,
+            "orderQty": orderQty,
+            "orderType": orderType,
+            "isAutomated": True
+        }
+
+        if price is not None:
+            payload["price"] = price
+
+        if stopPrice is not None:
+            payload["stopPrice"] = stopPrice
+
+        return await self._request("POST", "/order/modifyorder", json=payload)
+
+    async def cancel(self, orderId: int) -> Dict[str, Any]:
+        """
+        Cancel existing order per Tradovate CancelOrder spec.
+
+        Args:
+            orderId: Tradovate order ID
 
         Returns:
             Cancellation response
         """
-        payload = {"orderId": order_id}
-        return await self._request("POST", "/orders/cancel", json=payload)
+        payload = {"orderId": orderId}
+        return await self._request("POST", "/order/cancelorder", json=payload)
 
-    async def get_order_status(self, order_id: str) -> Dict[str, Any]:
+    async def get_order_status(self, orderId: int) -> Dict[str, Any]:
         """
         Get order status.
 
         Args:
-            order_id: Tradovate order ID
+            orderId: Tradovate order ID
 
         Returns:
             Order details
         """
-        return await self._request("GET", f"/orders/{order_id}")
+        return await self._request("GET", f"/order/{orderId}")
 
     async def close(self):
         """Close HTTP client connection."""
