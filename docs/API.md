@@ -8,7 +8,11 @@ http://localhost:8000
 
 ## Authentication
 
-All endpoints (except `/health`) require API key authentication.
+All endpoints (except `/health`) require API key authentication via Bearer token header.
+
+When deployed behind nginx with basic HTTP authentication, include basic auth credentials.
+
+### Bearer Token (API Key)
 
 **Header Format:**
 ```
@@ -19,6 +23,33 @@ Authorization: Bearer <api_key>
 ```bash
 curl -H "Authorization: Bearer dispatcher-key-123" \
   http://localhost:8000/execute
+```
+
+### With Basic HTTP Auth (Behind Nginx Reverse Proxy)
+
+When deployed behind nginx with `.htpasswd` authentication, provide basic auth credentials:
+
+**Using `-u` flag:**
+```bash
+curl -u username:password \
+  -H "Authorization: Bearer dispatcher-key-123" \
+  https://tradovate-dispatch.hastek.net/execute
+```
+
+**Example with actual credentials:**
+```bash
+curl -u dispatcher:mypassword \
+  -H "Authorization: Bearer dispatcher-key-123" \
+  -H "Content-Type: application/json" \
+  -d '{"command": "BUY 10 ES AT 4500", "agent_id": "agent-1"}' \
+  https://tradovate-dispatch.hastek.net/execute
+```
+
+**Or encode basic auth header manually:**
+```bash
+curl -H "Authorization: Basic $(echo -n 'dispatcher:mypassword' | base64)" \
+  -H "Authorization: Bearer dispatcher-key-123" \
+  https://tradovate-dispatch.hastek.net/execute
 ```
 
 ## Endpoints
