@@ -45,12 +45,46 @@ Health check endpoint. No authentication required.
 
 Execute a trading command.
 
+#### Example 1: Market Order
+
 **Request:**
 ```json
 {
   "command": "BUY 10 ES AT 4500",
   "agent_id": "agent-1"
 }
+```
+
+**Curl Command:**
+```bash
+curl -X POST http://localhost:8000/execute \
+  -H "Authorization: Bearer dispatcher-key-123" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "command": "BUY 10 ES AT 4500",
+    "agent_id": "agent-1"
+  }'
+```
+
+#### Example 2: Set Stop Loss
+
+**Request:**
+```json
+{
+  "command": "SET STOP LOSS AT 4450 FOR ES",
+  "agent_id": "agent-1"
+}
+```
+
+**Curl Command:**
+```bash
+curl -X POST http://localhost:8000/execute \
+  -H "Authorization: Bearer dispatcher-key-123" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "command": "SET STOP LOSS AT 4450 FOR ES",
+    "agent_id": "agent-1"
+  }'
 ```
 
 **Response (Success):**
