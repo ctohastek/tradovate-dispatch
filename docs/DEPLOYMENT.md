@@ -190,6 +190,9 @@ server {
 }
 ```
 
+## Mail sending/relay
+This app can be configured to send emails. To ensure success, send using your own relay or one such as Proton Mail Bridge from a host with proper DNS/reverseDNS, SPF, DKIM etc configurations.
+
 ## Monitoring
 
 ### Health Checks
