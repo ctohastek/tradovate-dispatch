@@ -79,7 +79,7 @@ async def get_dependencies(agent_id: Optional[str] = None):
     if agent_id and agent_id in agents_config.get("agents", {}):
         agent_env = agents_config["agents"][agent_id].get("environment", "DEMO")
 
-    client = TradovateClient(_settings, environment=agent_env)
+    client = TradovateClient(_settings, environment=agent_env, agent_name=agent_id)
 
     return {
         'db': _db,
