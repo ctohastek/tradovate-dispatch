@@ -15,7 +15,7 @@ class CommandValidator:
     """Validate parsed trading commands for semantic correctness."""
 
     # Valid contracts (subset - expand as needed)
-    VALID_CONTRACTS = {"ES", "NQ", "YM", "RTY", "MES", "MNQ", "MYM", "MRTY"}
+    VALID_CONTRACTS = {"ES", "NQ", "YM", "RTY", "MES", "MNQ", "MYM", "MRTY", "MESM6", "MCLM6"}
 
     # Valid actions
     VALID_ACTIONS = {"BUY", "SELL", "CANCEL", "STATUS", "HELP"}
