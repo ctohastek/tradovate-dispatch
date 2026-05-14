@@ -1,13 +1,20 @@
 import aiosqlite
 from typing import Any, List
+from urllib.parse import urlparse
 
 
 class Database:
     """AsyncIO wrapper for SQLite database."""
 
     def __init__(self, db_path: str = "dispatcher.db"):
-        self.db_path = db_path
+        self.db_path = self._parse_url(db_path)
         self.conn = None
+
+    def _parse_url(self, url: str) -> str:
+        """Parse SQLAlchemy-style SQLite URL to file path."""
+        if url.startswith("sqlite:///"):
+            return url.replace("sqlite:///", "")
+        return url
 
     async def init(self):
         """Initialize database and create tables."""
