@@ -67,7 +67,7 @@ TRADOVATE_CLIENT_ID_MINI03=your-client-id-mini03
 # Dispatcher API key (for this service's clients)
 DISPATCHER_API_KEY=221d524aa69a29c14ecbd0f046565ff751bce829a1683d967f0dd40f50fc72f8
 ```
-
+(NOTE: sample DISPATCHER_API_KEY, but variables with *_MINI* are referenced in code base so will need to be updated everywhere to match your config)
 ### 6. Configure Agents
 
 ```bash
