@@ -57,9 +57,9 @@ class Settings(BaseSettings):
         Returns:
             Dictionary with keys: api_key, client_id, environment
         """
-        api_key_var = f"TRADOVATE_API_KEY_{agent_name}".upper()
-        client_id_var = f"TRADOVATE_CLIENT_ID_{agent_name}".upper()
-        env_var = f"AGENT_ENVIRONMENT_{agent_name}".upper()
+        api_key_var = f"TRADOVATE_API_KEY_{agent_name}"
+        client_id_var = f"TRADOVATE_CLIENT_ID_{agent_name}"
+        env_var = f"AGENT_ENVIRONMENT_{agent_name}"
 
         return {
             "api_key": os.getenv(api_key_var),
