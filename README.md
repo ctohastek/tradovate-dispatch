@@ -26,6 +26,7 @@ A FastAPI-based command dispatcher for the Tradovate trading platform. Parses na
    cp .env.example .env
    # Edit .env with your Tradovate credentials
    ```
+   (NOTE- you will need a tradovate account, proper funding, registration for tradovate API product usage (billed monthly), gen API keys and metadata - all these are used in the config)
 
 3. **Run**
    ```bash
