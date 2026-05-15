@@ -13,7 +13,7 @@ class TradovateClient:
         "StopLimit", "TrailingStop", "TrailingStopLimit"
     }
 
-    def __init__(self, settings: Settings, environment: str = "DEMO", agent_name: Optional[str] = None):
+    def __init__(self, settings: Settings, environment: str = "DEMO", agent_name: Optional[str] = None, app_id: Optional[str] = None):
         """
         Initialize Tradovate client.
 
@@ -21,9 +21,11 @@ class TradovateClient:
             settings: Application settings with API URLs and credentials
             environment: "LIVE" or "DEMO" to select endpoint
             agent_name: Agent name to get per-agent credentials (e.g., 'mini01')
+            app_id: Tradovate API appId (nickname of API key from agents.yaml)
         """
         self.settings = settings
         self.agent_name = agent_name
+        self.app_id = app_id
         self.environment = environment.upper()
 
         if self.environment == "LIVE":
@@ -34,36 +36,92 @@ class TradovateClient:
         # Get agent-specific Tradovate credentials
         if agent_name:
             agent_config = settings.get_agent_tradovate_config(agent_name)
-            self.api_key = agent_config.get("api_key")
-            self.client_id = agent_config.get("client_id")
+            self.api_key = agent_config.get("api_key")  # sec (API secret)
+            self.client_id = agent_config.get("client_id")  # cid
         else:
             self.api_key = settings.tradovate_api_key
             self.client_id = None
 
+        # Shared credentials for auth
+        self.account_name = settings.tradovate_account_name
+        self.account_pass = settings.tradovate_account_pass
+        self.device_id = settings.tradovate_device_id
+
         self.http_client = httpx.AsyncClient()
-        self._headers = {
-            "Authorization": f"Bearer {self.api_key}",
+        self._access_token: Optional[str] = None
+        self._headers: Dict[str, str] = {
             "Content-Type": "application/json"
         }
 
-        # Account info (fetched via _initialize())
+        # Account info (fetched via initialize())
         self.account_id: Optional[int] = None
         self.account_spec: Optional[str] = None
 
     async def initialize(self) -> None:
-        """Fetch account info from API. Must be called before placing orders."""
+        """Authenticate and fetch account info. Must be called before placing orders."""
         try:
+            # Step 1: Get access token via auth flow
+            self._access_token = await self._get_access_token()
+            self._headers["Authorization"] = f"Bearer {self._access_token}"
+
+            # Step 2: Fetch account list
             accounts = await self._request("GET", "/account/list")
             if not accounts:
-                raise Exception("No accounts found for this API key")
-            # Use first account
+                raise Exception("No accounts found for authenticated user")
+
+            # Step 3: Use first account
             account = accounts[0]
             self.account_id = account.get("id")
             self.account_spec = account.get("name")
             if not self.account_id or not self.account_spec:
                 raise Exception("Account missing id or name")
         except Exception as e:
-            raise Exception(f"Failed to initialize account info: {str(e)}")
+            raise Exception(f"Failed to initialize: {str(e)}")
+
+    async def _get_access_token(self) -> str:
+        """Request access token using account + agent API credentials."""
+        if not all([self.account_name, self.account_pass, self.api_key, self.client_id, self.device_id]):
+            raise Exception("Missing required auth credentials: account_name, account_pass, api_key, client_id, device_id")
+
+        payload = {
+            "name": self.account_name,  # Account name (e.g., mini01)
+            "password": self.account_pass,  # Password set during API key creation
+            "cid": self.client_id,
+            "sec": self.api_key,
+            "deviceId": self.device_id,
+            "appId": self.app_id or "TradovateDispatcher",
+            "appVersion": "1.0"
+        }
+
+        base_url = self.api_url.rstrip('/')
+        url = f"{base_url}/auth/accesstokenrequest"
+
+        try:
+            response = await self.http_client.post(
+                url,
+                json=payload,
+                headers={"Content-Type": "application/json"},
+                timeout=30.0
+            )
+            response.raise_for_status()
+            result = response.json()
+
+            # Check for rate limit response
+            if "p-ticket" in result or "p-time" in result:
+                raise Exception(
+                    f"Rate limited: wait {result.get('p-time', '?')} seconds. "
+                    f"p-ticket: {result.get('p-ticket', 'N/A')}"
+                )
+
+            if "errorText" in result and result["errorText"]:
+                raise Exception(f"Auth error: {result['errorText']}")
+
+            if "accessToken" not in result:
+                raise Exception("No accessToken in response")
+
+            return result["accessToken"]
+        except httpx.HTTPError as e:
+            raise Exception(f"Auth request failed: {str(e)}")
 
     async def _request(
         self,
@@ -85,7 +143,8 @@ class TradovateClient:
         Raises:
             Exception: If request fails
         """
-        url = f"{self.api_url}{endpoint}"
+        base_url = self.api_url.rstrip('/')
+        url = f"{base_url}{endpoint}"
 
         try:
             response = await self.http_client.request(

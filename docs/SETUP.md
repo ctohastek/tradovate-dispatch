@@ -2,8 +2,9 @@
 
 ## Prerequisites
 
-- Python 3.8+
+- Python 3.9+
 - pip or conda
+- Tradovate account with API Access subscription
 - (Optional) SQLite3 CLI for debugging
 
 ## Installation
@@ -19,7 +20,7 @@ cd tradovate-dispatch
 
 ```bash
 python -m venv venv
-source venv/bin/activate  # On Windows: venv\\Scripts\\activate
+source venv/bin/activate  # On Windows: venv\Scripts\activate
 ```
 
 ### 3. Install Dependencies
@@ -28,29 +29,83 @@ source venv/bin/activate  # On Windows: venv\\Scripts\\activate
 pip install -r requirements.txt
 ```
 
-### 4. Configure Environment
+### 4. Generate Tradovate API Keys
+
+For each agent (mini01, mini02, mini03):
+1. Log into Tradovate
+2. Navigate to **Settings → API Access**
+3. Click **Generate API Key**
+4. Give it a nickname (e.g., "mini01")
+5. **Protect with password** - set a unique password (this will be used for authentication)
+6. Save the credentials shown:
+   - API Secret (`sec`)
+   - Client ID (`cid`)
+
+### 5. Configure Environment Variables
 
 ```bash
 cp .env.example .env
 ```
 
-Edit `.env` with your actual Tradovate API credentials:
+Edit `.env` with your Tradovate credentials:
 
 ```bash
-TRADOVATE_API_URL=https://api.tradovate.com
-TRADOVATE_API_KEY=your-tradovate-key
-DISPATCHER_API_KEY=your-dispatcher-key
+# Shared authentication (same for all agents)
+TRADOVATE_ACCOUNT_NAME=mini01              # First agent name
+TRADOVATE_ACCOUNT_PASS=your-api-password   # Password from API key generation
+TRADOVATE_DEVICE_ID=uuid-from-tradovate    # Device ID from Tradovate
+
+# Per-agent API credentials (from API key generation)
+TRADOVATE_API_KEY_MINI01=your-api-secret-mini01
+TRADOVATE_API_KEY_MINI02=your-api-secret-mini02
+TRADOVATE_API_KEY_MINI03=your-api-secret-mini03
+
+TRADOVATE_CLIENT_ID_MINI01=your-client-id-mini01
+TRADOVATE_CLIENT_ID_MINI02=your-client-id-mini02
+TRADOVATE_CLIENT_ID_MINI03=your-client-id-mini03
+
+# Dispatcher API key (for this service's clients)
+DISPATCHER_API_KEY=221d524aa69a29c14ecbd0f046565ff751bce829a1683d967f0dd40f50fc72f8
 ```
 
-### 5. Initialize Database
+### 6. Configure Agents
 
-The database is automatically initialized on first run. Verify:
+```bash
+cp agents.yaml.example agents.yaml
+```
+
+Edit `agents.yaml` to set each agent's environment (demo/live) and appId:
+
+```yaml
+agents:
+  mini01:
+    name: "mini01"
+    api_key: "mini01-api-key-here"
+    appId: "mini01"              # Must match Tradovate API key nickname
+    environment: "demo"          # demo or live
+    rate_limit_override: 20
+    max_contracts_allowed: 6
+    enabled: true
+
+  mini02:
+    name: "mini02"
+    api_key: "mini02-api-key-here"
+    appId: "mini02"              # Must match Tradovate API key nickname
+    environment: "demo"
+    rate_limit_override: 20
+    max_contracts_allowed: 6
+    enabled: true
+```
+
+### 7. Initialize Database
+
+The database is automatically initialized on first run:
 
 ```bash
 python -c "from app.database import Database; import asyncio; asyncio.run(Database().init())"
 ```
 
-### 6. Run Tests
+### 8. Run Tests
 
 ```bash
 pytest tests/ -v
@@ -87,31 +142,51 @@ Response:
 }
 ```
 
+## Tradovate API Authentication Flow
+
+1. **Get Access Token** - Call `/auth/accesstokenrequest` with:
+   - `name`: TRADOVATE_ACCOUNT_NAME (e.g., mini01)
+   - `password`: TRADOVATE_ACCOUNT_PASS (password set during API key generation)
+   - `cid`: TRADOVATE_CLIENT_ID_<AGENT> (from API key generation)
+   - `sec`: TRADOVATE_API_KEY_<AGENT> (from API key generation)
+   - `deviceId`: TRADOVATE_DEVICE_ID (device identifier)
+   - `appId`: Agent appId (from agents.yaml)
+
+2. **Use Access Token** - All subsequent API calls include:
+   - `Authorization: Bearer <accessToken>`
+   - Account and order details in request body
+
 ## Configuration
 
-See `.env.example` for all available configuration options:
+See `.env.example` for all available options:
 
-- `RATE_LIMIT_REQUESTS_PER_MINUTE` - Default: 20
-- `ALERT_EMAIL_ENABLED` - Default: false
-- `LOG_LEVEL` - Default: INFO
-- `ENVIRONMENT` - Default: development
+- `RATE_LIMIT_REQUESTS_PER_MINUTE` - Per-agent request limit (default: 10)
+- `ALERT_EMAIL_ENABLED` - Enable email alerts (default: false)
+- `LOG_LEVEL` - Logging level (default: INFO)
 
 ## Troubleshooting
 
-### "Connection refused" error
+### "Incorrect username or password" error
 
-- Verify server is running: `curl http://localhost:8000/health`
-- Check PORT environment variable
+- Verify `TRADOVATE_ACCOUNT_NAME` matches your API key account
+- Verify `TRADOVATE_ACCOUNT_PASS` is the password set during API key generation (NOT your account password)
+- Ensure these match exactly as shown in `.env`
 
-### "Invalid API key" error
+### "Rate limit exceeded" error
 
-- Verify `DISPATCHER_API_KEY` in .env matches Authorization header
-- Ensure header format: `Authorization: Bearer <key>`
+- You've hit the 5 requests/hour limit for `/auth/accesstokenrequest`
+- Wait the time specified in the response before retrying
+- This is a Tradovate API limit, not a dispatcher limit
+
+### "Invalid API key" error (Dispatcher)
+
+- Verify `DISPATCHER_API_KEY` in Authorization header matches .env
+- Ensure header format: `Authorization: Bearer <DISPATCHER_API_KEY>`
 
 ### Database locked error
 
 - Only one process should access dispatcher.db at a time
-- Use WAL mode for concurrent access (default in code)
+- Use WAL mode for concurrent access (enabled by default)
 
 ## Next Steps
 

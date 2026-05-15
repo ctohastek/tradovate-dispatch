@@ -1,25 +1,45 @@
+# Sample Tradovate API Authentication Call
+# This is the /auth/accesstokenrequest endpoint - NOT a trading command
 
-# Sample call to tradovate requesting auth/accesstokenrequest (not a trading command for orders)
+## Authentication Flow
+1. Call this endpoint to get an access token
+2. Use that token (Bearer <accessToken>) for all subsequent API calls
+3. Access tokens expire after 90 minutes - call /auth/renewaccesstoken to extend
 
-Note:
- - my useraccount name is needed (in .env)
- - my usercredentials are needed (in .env)
- - (The 2 preceding should NOT be needed for trading calls)
- - appID == our agent IDs each appID (or agent name) has its own API key
- - sec == is the API key (secret) belonging to the agent (and app)
- - cid == Client ID <--- issued uniquely with each API key and has to be presented with key
- - deviceId == global deviceID - value there is the same for all agents
+## Parameter Reference
+ - name: Account name used for authentication (from TRADOVATE_ACCOUNT_NAME in .env)
+ - password: Password set during API key generation (from TRADOVATE_ACCOUNT_PASS in .env)
+ - appId: Tradovate API key nickname (from agents.yaml appId field)
+ - appVersion: Version of your app (e.g., "1.0")
+ - deviceId: Unique device identifier (from TRADOVATE_DEVICE_ID in .env, same for all agents)
+ - cid: Client ID issued with API key (from TRADOVATE_CLIENT_ID_<AGENT> in .env)
+ - sec: API secret issued with API key (from TRADOVATE_API_KEY_<AGENT> in .env)
+
+## Example curl call:
 
 curl -X POST "https://demo.tradovateapi.com/v1/auth/accesstokenrequest" \
  -H "accept: application/json" \
  -H "Content-Type: application/json" \
  -d "{ \
-   \"name\": \"AccountName\", \
-   \"password\": \"YourPassword\", \
+   \"name\": \"mini01\", \
+   \"password\": \"password-set-during-api-key-generation\", \
    \"appId\": \"mini01\", \
-   \"appVersion\": \"0.0.1\", \
-   \"deviceId\": \"   ..123..  \", \
+   \"appVersion\": \"1.0\", \
+   \"deviceId\": \"device-id-from-TRADOVATE_DEVICE_ID-env\", \
    \"cid\": \"12026\", \
-   \"sec\": \"YourSecret\" \
+   \"sec\": \"your-api-secret-from-key-generation\" \
  }"
 
+## Response (Success):
+{
+  "accessToken": "ag_8a97la5-T6PqMfUhu-NReEUxW4cFq_dxw...",
+  "expirationTime": "2026-05-14T15:45:00Z",
+  "userId": 12345,
+  "name": "mini01"
+}
+
+## Then use accessToken for trading calls:
+
+curl -X GET "https://demo.tradovateapi.com/v1/account/list" \
+ -H "Authorization: Bearer ag_8a97la5-T6PqMfUhu-NReEUxW4cFq_dxw..." \
+ -H "Content-Type: application/json"

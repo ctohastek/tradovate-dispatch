@@ -73,13 +73,16 @@ async def get_dependencies(agent_id: Optional[str] = None):
     if _mailer is None:
         _mailer = AlertMailer(_settings)
 
-    # Load agent config and create client with agent's environment
+    # Load agent config and create client with agent's environment and appId
     agents_config = _load_agents_config()
     agent_env = "DEMO"  # default
+    app_id = None  # default
     if agent_id and agent_id in agents_config.get("agents", {}):
-        agent_env = agents_config["agents"][agent_id].get("environment", "DEMO")
+        agent_config = agents_config["agents"][agent_id]
+        agent_env = agent_config.get("environment", "DEMO")
+        app_id = agent_config.get("appId")
 
-    client = TradovateClient(_settings, environment=agent_env, agent_name=agent_id)
+    client = TradovateClient(_settings, environment=agent_env, agent_name=agent_id, app_id=app_id)
     # Fetch account info from Tradovate API
     await client.initialize()
 
