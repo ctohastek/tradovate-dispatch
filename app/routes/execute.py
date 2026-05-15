@@ -24,6 +24,7 @@ _audit_logger = None
 _mailer = None
 _settings = None
 _agents_config = None
+_clients: Dict[str, Any] = {}  # Per-agent cached clients (auth token reused)
 
 
 def _load_agents_config() -> Dict[str, Any]:
@@ -73,18 +74,22 @@ async def get_dependencies(agent_id: Optional[str] = None):
     if _mailer is None:
         _mailer = AlertMailer(_settings)
 
-    # Load agent config and create client with agent's environment and appId
-    agents_config = _load_agents_config()
-    agent_env = "DEMO"  # default
-    app_id = None  # default
-    if agent_id and agent_id in agents_config.get("agents", {}):
-        agent_config = agents_config["agents"][agent_id]
-        agent_env = agent_config.get("environment", "DEMO")
-        app_id = agent_config.get("appId")
+    # Load agent config and create/reuse cached client (avoids re-authing on every request)
+    global _clients
+    if agent_id not in _clients:
+        agents_config = _load_agents_config()
+        agent_env = "DEMO"
+        app_id = None
+        if agent_id and agent_id in agents_config.get("agents", {}):
+            agent_config = agents_config["agents"][agent_id]
+            agent_env = agent_config.get("environment", "DEMO")
+            app_id = agent_config.get("appId")
 
-    client = TradovateClient(_settings, environment=agent_env, agent_name=agent_id, app_id=app_id)
-    # Fetch account info from Tradovate API
-    await client.initialize()
+        client = TradovateClient(_settings, environment=agent_env, agent_name=agent_id, app_id=app_id)
+        await client.initialize()
+        _clients[agent_id] = client
+
+    client = _clients[agent_id]
 
     return {
         'db': _db,
