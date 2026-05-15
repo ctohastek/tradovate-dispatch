@@ -80,8 +80,15 @@ class TradovateClient:
 
     async def _get_access_token(self) -> str:
         """Request access token using account + agent API credentials."""
-        if not all([self.account_name, self.account_pass, self.api_key, self.client_id, self.device_id]):
-            raise Exception("Missing required auth credentials: account_name, account_pass, api_key, client_id, device_id")
+        missing = [name for name, val in [
+            ("account_name", self.account_name),
+            ("account_pass", self.account_pass),
+            ("api_key", self.api_key),
+            ("client_id", self.client_id),
+            ("device_id", self.device_id),
+        ] if not val]
+        if missing:
+            raise Exception(f"Missing required auth credentials: {', '.join(missing)}")
 
         payload = {
             "name": self.account_name,  # Account name (e.g., mini01)

@@ -3,9 +3,12 @@ from pydantic_settings import BaseSettings
 from pydantic import ConfigDict
 from typing import Optional
 import os
+from pathlib import Path
 from dotenv import load_dotenv
 
-load_dotenv()
+# Load .env relative to this file's location so it works regardless of cwd
+_env_path = Path(__file__).parent.parent / ".env"
+load_dotenv(dotenv_path=_env_path)
 
 
 class Settings(BaseSettings):
@@ -60,7 +63,7 @@ class Settings(BaseSettings):
         Returns:
             Dictionary with keys: api_key, client_id, environment
         """
-        api_key_var = f"TRADOVATE_API_KEY_{agent_name}"
+        api_key_var = f"TRADOVATE_API_KEY_{agent_name.upper()}"
         client_id_var = f"TRADOVATE_CLIENT_ID_{agent_name}"
         env_var = f"AGENT_ENVIRONMENT_{agent_name}"
 
