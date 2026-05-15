@@ -35,6 +35,7 @@ A FastAPI-based command dispatcher for the Tradovate trading platform. Parses na
    Server runs at http://localhost:8000
 
 4. **Test the API**
+   (Currently waiting update for this command 5/15/2026, new params introduced)
    ```bash
    curl -X POST http://localhost:8000/execute \
      -H "Authorization: Bearer your-api-key" \
