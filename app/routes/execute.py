@@ -80,6 +80,8 @@ async def get_dependencies(agent_id: Optional[str] = None):
         agent_env = agents_config["agents"][agent_id].get("environment", "DEMO")
 
     client = TradovateClient(_settings, environment=agent_env, agent_name=agent_id)
+    # Fetch account info from Tradovate API
+    await client.initialize()
 
     return {
         'db': _db,

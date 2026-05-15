@@ -46,6 +46,25 @@ class TradovateClient:
             "Content-Type": "application/json"
         }
 
+        # Account info (fetched via _initialize())
+        self.account_id: Optional[int] = None
+        self.account_spec: Optional[str] = None
+
+    async def initialize(self) -> None:
+        """Fetch account info from API. Must be called before placing orders."""
+        try:
+            accounts = await self._request("GET", "/account/list")
+            if not accounts:
+                raise Exception("No accounts found for this API key")
+            # Use first account
+            account = accounts[0]
+            self.account_id = account.get("id")
+            self.account_spec = account.get("name")
+            if not self.account_id or not self.account_spec:
+                raise Exception("Account missing id or name")
+        except Exception as e:
+            raise Exception(f"Failed to initialize account info: {str(e)}")
+
     async def _request(
         self,
         method: str,
@@ -109,6 +128,8 @@ class TradovateClient:
         self._validate_order_type(orderType)
 
         payload = {
+            "accountSpec": self.account_spec,
+            "accountId": self.account_id,
             "action": "Buy",
             "symbol": symbol,
             "orderQty": orderQty,
@@ -142,6 +163,8 @@ class TradovateClient:
         self._validate_order_type(orderType)
 
         payload = {
+            "accountSpec": self.account_spec,
+            "accountId": self.account_id,
             "action": "Sell",
             "symbol": symbol,
             "orderQty": orderQty,
@@ -182,6 +205,8 @@ class TradovateClient:
         self._validate_order_type(orderType)
 
         payload = {
+            "accountSpec": self.account_spec,
+            "accountId": self.account_id,
             "action": action,
             "symbol": symbol,
             "orderQty": orderQty,
@@ -225,6 +250,8 @@ class TradovateClient:
         self._validate_order_type(orderType)
 
         payload = {
+            "accountSpec": self.account_spec,
+            "accountId": self.account_id,
             "action": action,
             "symbol": symbol,
             "orderQty": orderQty,
@@ -265,6 +292,8 @@ class TradovateClient:
         self._validate_order_type(orderType)
 
         payload = {
+            "accountSpec": self.account_spec,
+            "accountId": self.account_id,
             "orderId": orderId,
             "orderQty": orderQty,
             "orderType": orderType,
@@ -289,7 +318,11 @@ class TradovateClient:
         Returns:
             Cancellation response
         """
-        payload = {"orderId": orderId}
+        payload = {
+            "accountSpec": self.account_spec,
+            "accountId": self.account_id,
+            "orderId": orderId
+        }
         return await self._request("POST", "/order/cancelorder", json=payload)
 
     async def get_order_status(self, orderId: int) -> Dict[str, Any]:
