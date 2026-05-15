@@ -103,6 +103,9 @@ class TradovateClient:
         base_url = self.api_url.rstrip('/')
         url = f"{base_url}/auth/accesstokenrequest"
 
+        import logging
+        logging.getLogger(__name__).warning(f"AUTH PAYLOAD (no secrets): name={payload['name']}, appId={payload['appId']}, cid={payload['cid']}, deviceId={payload['deviceId']}")
+
         try:
             response = await self.http_client.post(
                 url,

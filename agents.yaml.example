@@ -6,7 +6,7 @@ agents:
   mini01:
     name: "mini01"
     api_key: "mini01-api-key-here"
-    appId: "mini01"  # Tradovate API appId (nickname of API key)
+    appId: "mini01"  # Tradovate registered account name - same for all agents
     environment: "demo"  # demo or live
     rate_limit_override: 20
     max_contracts_allowed: 6
@@ -15,7 +15,7 @@ agents:
   mini02:
     name: "mini02"
     api_key: "mini02-api-key-here"
-    appId: "mini02"  # Tradovate API appId
+    appId: "mini01"  # Tradovate registered account name - same for all agents
     environment: "demo"  # demo or live
     rate_limit_override: 20
     max_contracts_allowed: 6
@@ -24,7 +24,7 @@ agents:
   mini03:
     name: "mini03"
     api_key: "mini03-api-key-here"
-    appId: "mini03"  # Tradovate API appId
+    appId: "mini01"  # Tradovate registered account name - same for all agents
     environment: "demo"  # demo or live
     rate_limit_override: 20
     max_contracts_allowed: 6
